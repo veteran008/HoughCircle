@@ -27,6 +27,11 @@ int my_vsprintf(char *format, ...)
 	return 0;
 }
 
+bool points_comp(const edgeInformation &a, const edgeInformation &b)
+{
+	return a.gradient > b.gradient;
+}
+
 //2、边缘检测
 
 ///////////////////////////////////////////////////////////////////////////
@@ -434,14 +439,13 @@ namespace ommTool
 			edgeArray[i] = edgeInfor[i];
 		}
 
-
-		/*FILE *e;
-		e = fopen("E:\\project03\\e.txt", "w");
-		for (int i = 0; i < k; i++)
-		{
-		fprintf(e,"%d   %d   \n", edgeInfor[i].xInteger, edgeInfor[i].yInteger);
-		}
-		*/
+		//FILE *e;
+		//e = fopen("e.txt", "w");
+		//for (int i = 0; i < k; i++)
+		//{
+		//	fprintf(e,"%d   %d   \n", edgeArray[i].xyInteger.x, edgeArray[i].xyInteger.y);
+		//}
+		//fclose(e);
 
 		//free(angAll);
 		return 1;
@@ -454,7 +458,22 @@ namespace ommTool
 
 CVisHoughTransform::CVisHoughTransform()
 {
-	downLevel = 2;
+	m_downLevel = 2;
+	
+	m_sectors = 36;	//10 du
+	m_selectedRatio = (float)0.3;
+	m_nSelectMin = 200 / pow(2, m_downLevel);		//其实应该跟总的边缘点个数相关
+	m_nSelectMax = 400 / pow(2, m_downLevel);
+
+	m_Ttheta = 5;
+	m_Tshift = 10;
+
+	m_localThreshMin = 20;	//连通域标记阈值，太小-连通域太多，太大-本来一个连通域被分割了。
+
+	m_radiusMax = 120 / pow(2,m_downLevel);
+	m_radiusMin = 40 / pow(2, m_downLevel);
+
+	m_voteScoreMin = m_nSelectMin;
 }
 
 CVisHoughTransform::~CVisHoughTransform()
@@ -503,10 +522,28 @@ int CVisHoughTransform::detectCircle(IMG_UBBUF srcBuf, vector<houghCircle3f> &be
 	return 0;
 }
 
-int regionDFS(int *pic,int *label,int r, int c, int &cnt)
+void CVisHoughTransform::regionDFS(IMG_UWORD *pic, IMG_UWORD *label,int r, int c, int height,int width,int id, IMG_COORD * storeMax,int threshold)
 {
+	if (r < 0 || r >= height || c < 0 || c >= width)		return;
+	if (pic[r * width + c] <= threshold || label[r * width + c] != 0)	return;
 
-	return 0;
+	label[r * width + c] = id;
+	if (pic[r * width + c] > pic[storeMax[id].y * width + (storeMax[id].x)])
+	{
+		storeMax[id].y = r;
+		storeMax[id].x = c;
+	}
+	for (int dr = -1; dr <= 1; dr++)
+	{
+		for (int dc = -1; dc <= 1; dc++)
+		{
+			if (dr != 0 || dc != 0)
+			{
+				regionDFS(pic, label, r + dr, c + dc, height, width, id, storeMax,threshold);
+			}
+		}
+	}
+
 }
 
 //////////////////////////////////////////////////
@@ -815,8 +852,302 @@ exit:
 	return status;
 }
 
+void CVisHoughTransform::getGaussianKernel_dim2(IMG_LREAL **gaus, const int size, const double sigma)
+{
+	const double PIII = 4.0*atan(1.0); //圆周率π赋值  
+	IMG_INT center = size / 2;
+	IMG_LREAL sum = 0;
+	for (IMG_INT i = 0; i < size; i++)
+	{
+		for (IMG_INT j = 0; j < size; j++)
+		{
+			gaus[i][j] = (1 / (2 * PIII*sigma*sigma))*exp(-((i - center)*(i - center) + (j - center)*(j - center)) / (2 * sigma*sigma));
+			sum += gaus[i][j];
+		}
+	}
+	for (IMG_INT i = 0; i < size; i++)
+	{
+		for (IMG_INT j = 0; j < size; j++)
+		{
+			gaus[i][j] /= sum;
+		}
+	}
 
+}
 
+int CVisHoughTransform::gaussfilter(IMG_UBBUF src, IMG_UBYTE *pDst,int kernalSize,double sigma)
+{
+	int status = ippStsNoErr;
+	//init var
+	IMG_UBYTE *pSrc = src.ptr;
+	IppiSize roiSize = {src.size.width,src.size.height };
+	IMG_INT size = kernalSize;
+
+	if (pSrc == NULL)
+	{
+		status = ippStsNoMemErr;
+		goto exit;
+	}
+
+	//begin
+	{
+		IMG_INT srcStep = sizeof(IMG_UBYTE) * roiSize.width;
+		IMG_INT dstStep = srcStep;
+
+		IMG_LREAL **gaus = new IMG_LREAL *[size];
+		for (int i = 0; i < size; i++)
+		{
+			gaus[i] = new IMG_LREAL[size];
+		}
+
+		if (gaus == NULL)
+		{
+			status = ippStsNoMemErr;
+			goto exit;
+		}
+
+		getGaussianKernel_dim2(gaus, size, sigma);
+		IppiSize  kernelSize = { size,size };
+		IppiSize gaussize = { size,size };
+		//IMG_WORD kernel[9];
+		IMG_WORD *kernel = new IMG_WORD[size * size];
+		for (IMG_INT i = 0; i < size; i++)
+		{
+			for (IMG_INT j = 0; j < size; j++)
+			{
+				kernel[i*size + j] = gaus[i][j] * 32767;		//-32767 ~ 32767
+			}
+		}
+		/*for (IMG_INT i = 0; i<size; i++)
+		{
+		for (IMG_INT j = 0; j<size; j++)
+		{
+		printf("%d,", kernel[i*size + j]);
+		}
+		}*/
+		IMG_INT divisor = 32767;//归一化
+		IMG_UBYTE *pBuffer = NULL;                /* Pointer to the work buffer */
+		IppiFilterBorderSpec* pSpec = NULL;   /* context structure */
+		IMG_INT iTmpBufSize = 0, iSpecSize = 0;   /* Common work buffer size */
+		IppiBorderType borderType = ippBorderConst;
+		IMG_UBYTE borderValue = 0;
+		IMG_INT numChannels = 1;
+
+		status = ippiFilterBorderGetSize(kernelSize, roiSize, ipp8u, ipp16s, numChannels, &iSpecSize, &iTmpBufSize);
+		if (status < 0)	goto exit_proc;
+
+		pSpec = (IppiFilterBorderSpec *)malloc(iSpecSize);
+		pBuffer = new IMG_UBYTE[iTmpBufSize];//(IMG_UBYTE *)pool.PMalloc(iTmpBufSize);
+		if (!pSpec || !pBuffer)
+		{
+			status = ippStsNoMemErr;
+			goto exit_proc;
+		}
+
+		status = ippiFilterBorderInit_16s(kernel, kernelSize, divisor, ipp8u, numChannels, ippRndNear, pSpec);
+		if (status < 0)	goto exit_proc;
+
+		status = ippiFilterBorder_8u_C1R(pSrc, srcStep, pDst, dstStep, roiSize, borderType, &borderValue, pSpec, pBuffer);
+		if (status < 0)	goto exit_proc;
+
+	exit_proc:
+		delete[] pBuffer;
+		free(pSpec);
+		delete[] kernel;
+		for (int i = 0; i < size; i++)
+		{
+			delete[] gaus[i];
+		}
+		delete[] gaus;
+		goto exit;
+	}
+exit:
+	//printf("gaussianFilterStatus: %s\n", ippGetStatusString(status));
+	return status;
+}
+
+int CVisHoughTransform::gaussfilter_UWORD(IMG_UWBUF src, IMG_UWORD *pDst, int kernalSize, double sigma)
+{
+	int status = ippStsNoErr;
+	//init var
+	IMG_UWORD *pSrc = src.ptr;
+	IppiSize roiSize = { src.size.width,src.size.height };
+	IMG_INT size = kernalSize;
+
+	if (pSrc == NULL)
+	{
+		status = ippStsNoMemErr;
+		goto exit;
+	}
+
+	//begin
+	{
+		IMG_INT srcStep = sizeof(IMG_UWORD) * roiSize.width;
+		IMG_INT dstStep = srcStep;
+
+		IMG_LREAL **gaus = new IMG_LREAL *[size];
+		for (int i = 0; i < size; i++)
+		{
+			gaus[i] = new IMG_LREAL[size];
+		}
+
+		if (gaus == NULL)
+		{
+			status = ippStsNoMemErr;
+			goto exit;
+		}
+
+		getGaussianKernel_dim2(gaus, size, sigma);
+		IppiSize  kernelSize = { size,size };
+		IppiSize gaussize = { size,size };
+		//IMG_WORD kernel[9];
+		IMG_WORD *kernel = new IMG_WORD[size * size];
+		for (IMG_INT i = 0; i < size; i++)
+		{
+			for (IMG_INT j = 0; j < size; j++)
+			{
+				kernel[i*size + j] = gaus[i][j] * 32767;		//-32767 ~ 32767
+			}
+		}
+		/*for (IMG_INT i = 0; i<size; i++)
+		{
+		for (IMG_INT j = 0; j<size; j++)
+		{
+		printf("%d,", kernel[i*size + j]);
+		}
+		}*/
+		IMG_INT divisor = 32767;//归一化
+		IMG_UBYTE *pBuffer = NULL;                /* Pointer to the work buffer */
+		IppiFilterBorderSpec* pSpec = NULL;   /* context structure */
+		IMG_INT iTmpBufSize = 0, iSpecSize = 0;   /* Common work buffer size */
+		IppiBorderType borderType = ippBorderConst;
+		IMG_UWORD borderValue = 0;
+		IMG_INT numChannels = 1;
+
+		status = ippiFilterBorderGetSize(kernelSize, roiSize, ipp16u, ipp16s, numChannels, &iSpecSize, &iTmpBufSize);
+		if (status < 0)	goto exit_proc;
+
+		pSpec = (IppiFilterBorderSpec *)malloc(iSpecSize);
+		pBuffer = new IMG_UBYTE[iTmpBufSize];//(IMG_UBYTE *)pool.PMalloc(iTmpBufSize);
+		if (!pSpec || !pBuffer)
+		{
+			status = ippStsNoMemErr;
+			goto exit_proc;
+		}
+
+		status = ippiFilterBorderInit_16s(kernel, kernelSize, divisor, ipp16u, numChannels, ippRndNear, pSpec);
+		if (status < 0)	goto exit_proc;
+
+		status = ippiFilterBorder_16u_C1R(pSrc, srcStep, pDst, dstStep, roiSize, borderType, &borderValue, pSpec, pBuffer);
+		if (status < 0)	goto exit_proc;
+
+	exit_proc:
+		delete[] pBuffer;
+		free(pSpec);
+		delete[] kernel;
+		for (int i = 0; i < size; i++)
+		{
+			delete[] gaus[i];
+		}
+		delete[] gaus;
+		goto exit;
+	}
+exit:
+	//printf("gaussianFilterStatus: %s\n", ippGetStatusString(status));
+	return status;
+}
+
+int CVisHoughTransform::findLocalmaximum(IMG_UWBUF uwbSrc)
+{
+	int status = ippStsNoErr;
+	VisBuf setVisbuf;
+
+	int width = uwbSrc.size.width;
+	int height = uwbSrc.size.height;
+	IMG_UWORD *pFilter = new IMG_UWORD[width * height];
+
+	//do gaussianFilter to find accuracy center region
+	gaussfilter_UWORD(uwbSrc, pFilter, 3, 3);
+	IMG_UWBUF uwbFilter;
+	setVisbuf.set_IMG_UWBUF(uwbFilter, pFilter, uwbSrc.size, uwbSrc.linestep);
+	
+
+	//select
+	//for (int k = 0; k < width * height; k++)
+	//{
+	//	if (pMarker[k] < m_localThreshMin)
+	//	{
+	//		pMarker[k] = 0;
+	//	}
+	//}
+	//int markerStep = width * sizeof(Ipp16u);
+	//int minLabel = 1;                      /* Minimal label value */
+	//int maxLabel = 65534;                  /* Maximal label value */
+	//int markersNum;                        /* Pointer to number of markers */
+	//Ipp8u* pBuffer = NULL;                 /* Pointer to the work buffer */
+	//int bufferSize = 0;
+	///* Calculate size of temporary buffer */
+	//status = ippiLabelMarkersGetBufferSize_16u_C1R({ width,height }, &bufferSize);
+	//if (status < 0) goto exit;
+	//pBuffer = ippsMalloc_8u(bufferSize);
+	//if (pBuffer == NULL) { status = ippStsNoMemErr; goto exit; }
+	///* Label connected non-zero components with different label values */
+	//status = ippiLabelMarkers_16u_C1IR(pMarker, markerStep, { width,height }, minLabel, maxLabel, ippiNormInf, &markersNum, pBuffer);		//should be ippiNormInf
+	//if (status < 0) goto exit;
+	//IMG_UWBUF uwbMarker;
+	//setVisbuf.set_IMG_UWBUF(uwbMarker, pMarker, uwbSrc.size, uwbSrc.linestep);
+
+	//find local maximum
+	IMG_COORD * storeMax = new IMG_COORD[width * height];
+	for (int k = 0; k < width * height; k++)
+	{
+		storeMax[k].x = 0;
+		storeMax[k].y = 0;
+	}
+	IMG_UWORD *pLabel = new IMG_UWORD[width * height];
+	memset(pLabel, 0, width * height * sizeof(IMG_UWORD));
+	
+	int pos = 0;
+	int cnt = 0;		//marker nums
+	for (int i = 0; i < height; i++)
+	{
+		for (int j = 0; j < width; j++)
+		{
+			if (pLabel[pos + j] == 0 && pFilter[pos + j] > m_localThreshMin)
+			{
+				regionDFS(pFilter, pLabel, i, j, height, width, ++cnt, storeMax,m_localThreshMin);
+			}
+		}
+		pos += width;
+	}
+	IMG_UWBUF uwbLabel;
+	setVisbuf.set_IMG_UWBUF(uwbLabel, pLabel, uwbSrc.size, uwbSrc.linestep);
+
+	//show center points
+	IMG_UWBUF uwbAllCenter;
+	IMG_UWORD *pAllCenter = new IMG_UWORD[width * height];
+	memset(pAllCenter, 0, width * height * sizeof(IMG_UWORD));
+	circleCenter.clear();
+	for (int k = 1; k <= cnt; k++)
+	{
+		IMG_WORD y = storeMax[k].y;
+		IMG_WORD x = storeMax[k].x;
+		pAllCenter[y * width + x] = 100;
+		circleCenter.push_back({ x,y });
+	}
+	setVisbuf.set_IMG_UWBUF(uwbAllCenter, pAllCenter, uwbSrc.size, uwbSrc.linestep);
+
+exit:
+	//if (pBuffer)
+	//{
+	//	ippsFree(pBuffer);
+	//}
+	delete[] pFilter;
+	delete[] pLabel;
+	delete[] storeMax;
+	delete[] pAllCenter;
+	return status;
+}
 
 int CVisHoughTransform::newDetectCircle(IMG_UBBUF ubbSrc)
 {
@@ -825,33 +1156,188 @@ int CVisHoughTransform::newDetectCircle(IMG_UBBUF ubbSrc)
 	int srcHeight = ubbSrc.size.height;
 	int srcWidth = ubbSrc.size.width;
 
-	//////////////////	pyramid layerDown	///////////////
+	//////////////////	pyramid layerDown (8ms)	///////////////
 	int downWidth = 0;
 	int downHeight = 0;
 	IMG_UBYTE *pPyramidData = new IMG_UBYTE[srcHeight * srcWidth];
-	status = (int)pyramid(ubbSrc, pPyramidData, downWidth, downHeight, downLevel);
+	if (m_downLevel)
+	{
+		status = (int)pyramid(ubbSrc, pPyramidData, downWidth, downHeight, m_downLevel);
+	}
+	else
+	{
+		memcpy(pPyramidData, ubbSrc.ptr, srcHeight * srcWidth);
+		downHeight = srcHeight;
+		downWidth = srcWidth;
+	}
 	//show pyramid result
 	IMG_UBBUF ubbPyramid;
 	setVisbuf.set_IMG_UBBUF(ubbPyramid, pPyramidData, { (IMG_UWORD)downWidth,(IMG_UWORD)downHeight }, downWidth);
 
-	/////////////	sobel 5*5	///////////////////////
+	///////////////	sobel 5*5 (40+ ms)	///////////////////////
 	int threshold = 0;
 	IMG_WORD *dstRoi = new IMG_WORD[downWidth * downHeight];
 	IMG_UBYTE *dstRoiE = new IMG_UBYTE[downWidth * downHeight];
 	Ipp32f *angAll = new Ipp32f[downWidth * downHeight];
 	edgeInformation *edgeArray = NULL;
 	IMG_INT eNum = 0;
-	status = ommTool::VisEdge_detection(ubbPyramid.ptr, ubbPyramid.size, threshold, dstRoi, dstRoiE, angAll, edgeArray, eNum);
+	status = ommTool::VisEdge_detection(ubbPyramid.ptr, ubbPyramid.size, threshold, dstRoi, dstRoiE, angAll, edgeArray, eNum);		
 	//show edgeDetect result
 	IMG_WBUF wbGradMag;
 	setVisbuf.set_IMG_WBUF(wbGradMag, dstRoi, ubbPyramid.size, ubbPyramid.linestep * sizeof(IMG_WORD));
 	IMG_RBUF rbGradAngle;
 	setVisbuf.set_IMG_RBUF(rbGradAngle, angAll, ubbPyramid.size, ubbPyramid.linestep * sizeof(IMG_REAL));
 
-	///////////////////		seperate gradAngle		//////////////////
+	///////////////////		seperate gradAngle	(ms)	//////////////////
+	float range = (float)360.0 / m_sectors;
+	float inv_range = (float)1.0 / range;
+	angleTable.clear();
+	angleTable.resize(m_sectors);
+	for (int k = 0; k < eNum; k++)
+	{
+		int _angle = int(edgeArray[k].angle + range / 2) % 360;
+		int angleIndex = (int)(_angle * inv_range);
+		if (angleIndex == m_sectors)
+		{
+			angleIndex--;
+		}
+		angleTable[angleIndex].push_back(edgeArray[k]);
+	}
+	//sort
+	for (int k = 0; k < m_sectors; k++)
+	{
+		sort(angleTable[k].begin(), angleTable[k].end(), points_comp);
+		int newSize = (int)(angleTable[k].size() * m_selectedRatio);
+		if (newSize < m_nSelectMin )
+		{
+			newSize = m_nSelectMin;
+		}
+		else if(newSize > m_nSelectMax)
+		{
+			newSize = m_nSelectMax;
+		}
+		angleTable[k].resize(newSize);
+	}
+//#ifdef DEBUG
+//	//FILE *fTable;
+//	//fTable = fopen("fTable.txt", "w");
+//	//for (int i = 0; i < angleTable.size(); i++)
+//	//{
+//	//	for (int j = 0; j < angleTable[i].size(); j++)
+//	//	{
+//	//		fprintf(fTable, "%d   %d   \n", angleTable[i][j].xyInteger.x, angleTable[i][j].xyInteger.y);
+//	//	}
+//	//}
+//	//fclose(fTable);
+//#endif // DEBUG
+//
+//	
+	//////////////////		find opposite points pair and accumulate center (50 ms) ///////////////////////////////
+	IMG_UWBUF hAcc2_wBuf;
+	IMG_UWORD *pHacc2 = new IMG_UWORD[downHeight * downWidth];
+	memset(pHacc2, 0, sizeof(IMG_UWORD) * downWidth * downHeight);
+	//int t = 0;
+	for (int i = 0; i < angleTable.size();i++)
+	{
+		for (int j = 0; j < angleTable[i].size(); j++)
+		{
+			int opposite_sec = (i + m_sectors / 2) % m_sectors;
+			for (int k = 0; k < angleTable[opposite_sec].size(); k++)
+			{
+				float lineTheta = atan2((angleTable[i][j].xyDecimal.y - angleTable[opposite_sec][k].xyDecimal.y), (angleTable[i][j].xyDecimal.x - angleTable[opposite_sec][k].xyDecimal.x)) / PI * 180;
+				if (lineTheta < 0)
+				{
+					lineTheta += 360;
+				}
+				if (fabs(lineTheta - angleTable[i][j].angle) > m_Tshift && fabs(lineTheta - angleTable[opposite_sec][k].angle) > m_Tshift)
+				{
+					//cout << ++t << endl;
+					continue;
+				}
+				if ( fabs( (int)(angleTable[i][j].angle + 180) % 360 - (int)angleTable[opposite_sec][k].angle )  > m_Ttheta)
+				{
+					continue;
+				}
+				//else , calculate center of points pair
+				IMG_WORD centerX = round( (angleTable[i][j].xyDecimal.x + angleTable[opposite_sec][k].xyDecimal.x) / 2);
+				IMG_WORD centerY = round( (angleTable[i][j].xyDecimal.y + angleTable[opposite_sec][k].xyDecimal.y) / 2);
+				//accumulate
+				pHacc2[centerY * downWidth + centerX] += 1;
+			}
+		}
+	}
+	//show pHacc2
+	setVisbuf.set_IMG_UWBUF(hAcc2_wBuf, pHacc2, ubbPyramid.size, downWidth * sizeof(IMG_UWORD));
+	
+	///////////////////////////		find local max		//////////////////////////////////
+	findLocalmaximum(hAcc2_wBuf);
+
+	//////////////////////////		accumulate r		//////////////////////////////////
+	IMG_UWORD **pHacc3 = new IMG_UWORD*[downHeight * downWidth];
+	for (int i = 0; i <= downHeight * downWidth - 1; i++)
+	{
+		pHacc3[i] = new IMG_UWORD[m_radiusMax + 1];
+		memset(pHacc3[i], 0, sizeof(IMG_UWORD) * (m_radiusMax + 1));
+	}
+	//cycle all center points candidate
+	for (int k = 0; k < circleCenter.size(); k++)
+	{
+		for (int i = 0; i < angleTable.size(); i++)
+		{
+			for (int j = 0; j < angleTable[i].size(); j++)
+			{
+				int _distance = sqrt(pow((circleCenter[k].x - angleTable[i][j].xyDecimal.x), 2) + pow((circleCenter[k].y - angleTable[i][j].xyDecimal.y), 2));
+				if (_distance >= m_radiusMin && _distance <= m_radiusMax)
+				{
+					pHacc3[circleCenter[k].y * downWidth + circleCenter[k].x][_distance]++;
+				}
+			}
+		}
+	}
+	//show pHacc3 max r 
+	IMG_UWBUF hAcc3_wBuf;
+	IMG_UWORD *pHacc3_show = new IMG_UWORD[downHeight * downWidth];
+	memset(pHacc3_show, 0, sizeof(IMG_UWORD) * downHeight * downWidth);
+
+	bestCircles.clear();
+	int pos = 0;
+	for (int i = 0; i < downHeight; i++)
+	{
+		for (int j = 0; j < downWidth; j++)
+		{
+			int temp_r = 0;
+			for (int r = m_radiusMin; r <= m_radiusMax; r++)
+			{
+				if (pHacc3[pos + j][r] > pHacc3_show[pos + j])
+				{
+					pHacc3_show[pos + j] = pHacc3[pos + j][r];
+					temp_r = r;
+				}
+			}
+			//push final center points using m_voteScoreMin
+			if (pHacc3_show[pos + j] > m_voteScoreMin)
+			{
+				houghCircle3i _cicle;
+				_cicle.center = { (IMG_WORD)j,(IMG_WORD)(pos / downWidth) };
+				_cicle.radius = temp_r;
+				bestCircles.push_back(_cicle);
+			}
+		}
+		pos += downWidth;
+	}
+	setVisbuf.set_IMG_UWBUF(hAcc3_wBuf, pHacc3_show, ubbPyramid.size, downWidth * sizeof(IMG_UWORD));
 
 
 	//free
+	for (int i = 0; i <= downHeight * downWidth - 1; i++)
+	{
+		//cout << i << endl;
+ 		delete[] pHacc3[i];
+	}
+
+	delete[] pHacc3;
+	delete[] pHacc3_show;
+	delete[] pHacc2;
 	delete[] pPyramidData;
 	delete[] dstRoi;
 	delete[] dstRoiE;
@@ -865,4 +1351,43 @@ int CVisHoughTransform::newDetectCircle(IMG_UBBUF ubbSrc)
 	return 0;
 }
 
-//int CVisHoughTransform::houghShape()
+vector<houghCircle3i> CVisHoughTransform::getBestCircles() 
+{ 
+	for (int i = 0; i < bestCircles.size(); i++)
+	{
+		bestCircles[i].center.x *= pow(2, m_downLevel);
+		bestCircles[i].center.y *= pow(2, m_downLevel);
+		bestCircles[i].radius *= pow(2, m_downLevel);
+	}
+	return bestCircles; 
+}
+
+void CVisHoughTransform::setParams(int downLevel, 
+								int sectors, 
+								float selectedRatio, 
+								int selectMin, 
+								int selectMax, 
+								float Ttheta, 
+								float Tshift, 
+								int localThreshMin,		
+								int radiusMin, 
+								int radiusMax, 
+								int voteScoreMin)
+{
+	m_downLevel = downLevel;
+
+	m_sectors = sectors;
+	m_selectedRatio = selectedRatio;
+	m_nSelectMin = selectMin;
+	m_nSelectMax = selectMax;
+
+	m_Ttheta = Ttheta;
+	m_Tshift = Tshift;
+
+	m_localThreshMin = localThreshMin;
+
+	m_radiusMin = radiusMin / pow(2, m_downLevel);
+	m_radiusMax = radiusMax / pow(2, m_downLevel);
+
+	m_voteScoreMin = voteScoreMin;
+}
