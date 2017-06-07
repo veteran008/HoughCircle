@@ -2,6 +2,7 @@
 #include "houghCircle_test.h"
 #include "myHoughTransform.h"
 
+
 using namespace cv;
 
 //int test1()
@@ -55,11 +56,51 @@ using namespace cv;
 //	return 0;
 //}
 
+int OpenCV_HoughCircle(int pic_num)
+{
+	printf("\n------kase:%d ------------\n", pic_num);
+	char readBmpPath[100];
+	char saveBmpPath[100];
+	sprintf(readBmpPath, "img/socket downlook срио/t (%u).bmp", pic_num);
+	sprintf(saveBmpPath, "img/CVres/CV_res(%u).bmp", pic_num);
+
+	Mat image, img_grey;     //input mat
+	image = imread(readBmpPath, 1);
+	if (image.empty())
+	{
+		printf("no image\n");
+		return -1;
+	}
+	cvtColor(image, img_grey, COLOR_BGR2GRAY);
+	GaussianBlur(img_grey, img_grey, Size(9, 9), 2, 2);
+	int circleNum_Max = 20;
+	vector<Vec3f> circles(circleNum_Max);		//init!!!!!!!!!!!!!!!!!
+	////////////////////////////////////////////////////////////////////////////////////////
+	double t = (double)cvGetTickCount();
+	HoughCircles(img_grey, circles, CV_HOUGH_GRADIENT,1, img_grey.rows / 8, 200, 50,40,120);
+	t = (double)cvGetTickCount() - t;
+	printf("OpenCV houghCircle exec time = %g ms\n", t / (cvGetTickFrequency() * 1000));
+	///////////////////////////////////////////////////////////////////////////////////////
+
+	for (size_t i = 0; i < circles.size(); i++)
+	{
+		Point center(cvRound(circles[i][0]), cvRound(circles[i][1]));
+		int radius = cvRound(circles[i][2]);
+		// draw the circle center
+		circle(image, center, 3, Scalar(0, 255, 0), -1, 8, 0);
+		// draw the circle outline
+		circle(image, center, radius, Scalar(0, 0, 255), 3, 8, 0);
+	}
+
+	imwrite(saveBmpPath, image);
+	
+	return 0;
+}
 
 int test_detectCircle()
 {
 	VisBuf setVisBf;
-	CVisHoughTransform houghObject;
+	CVisHoughCircle houghObject;
 	char* imageName = "img/2017-2-28-22-52-31.bmp";
 
 	Mat image, img_grey;     //input mat
@@ -124,10 +165,10 @@ int test_newDetectCircle(int pic_num)
 	char readBmpPath[100];
 	char saveBmpPath[100];
 	sprintf(readBmpPath, "img/socket downlook срио/t (%u).bmp", pic_num);
-	sprintf(saveBmpPath, "img/socket downlook срио/res(%u).bmp", pic_num);
+	sprintf(saveBmpPath, "img/res/res(%u).bmp", pic_num);
 
 	VisBuf setVisBf;
-	CVisHoughTransform houghObject;
+	CVisHoughCircle houghObject;
 	//char* imageName = "img/2017-2-28-23-54-10.bmp";
 	Mat image, img_grey;     //input mat
 	image = imread(readBmpPath, 1);
@@ -141,7 +182,12 @@ int test_newDetectCircle(int pic_num)
 	IMG_UBBUF ubbSrc;
 	setVisBf.set_IMG_UBBUF(ubbSrc, img_grey.data, { (IMG_UWORD)img_grey.cols,(IMG_UWORD)img_grey.rows }, (IMG_UWORD)img_grey.cols);
 
-	houghObject.newDetectCircle(ubbSrc);
+	//////////////////////////////////////////////////////////////////////////////////////////////
+	double t = (double)cvGetTickCount();
+	houghObject.newDetectCircle(ubbSrc);			
+	t = (double)cvGetTickCount() - t;
+	printf("my houghCircle exec time = %g ms\n", t / (cvGetTickFrequency() * 1000));
+	//////////////////////////////////////////////////////////////////////////////////////////////
 	vector<houghCircle3i> bestCircles = houghObject.getBestCircles();
 
 	//draw
@@ -192,7 +238,7 @@ int test_newDetectCircle(int pic_num)
 int test_gaussianFilter()
 {
 	VisBuf setVisBf;
-	CVisHoughTransform houghObject;
+	CVisHoughCircle houghObject;
 	char* imageName = "img/280.000-280.000-188.800.bmp";
 	Mat image, img_grey;     //input mat
 	image = imread(imageName, 1);
@@ -211,24 +257,26 @@ int test_gaussianFilter()
 	return 0;
 }
 
+
+
+
 int main()
 {
-	double t = (double)cvGetTickCount();
+	
 
 
 	//test1();
 	//test_detectCircle();
-	for (int i = 4; i <= 4; i++)
+	for (int i = 1; i <= 418; i++)
 	{
-		test_newDetectCircle(i);
+		//test_newDetectCircle(i);
 	}
-
+	for (int i = 1; i <= 418; i++)
+	{
+		OpenCV_HoughCircle(i);
+	}
 	//test_gaussianFilter();
 
-
-
-	t = (double)cvGetTickCount() - t;
-	printf("exec time = %g ms\n", t / (cvGetTickFrequency() * 1000));
 	_CrtDumpMemoryLeaks();
 	return 0;
 }

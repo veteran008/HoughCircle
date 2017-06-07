@@ -64,17 +64,42 @@ int my_vsprintf(char *format, ...);
 
 
 
-class CVisHoughTransform
+class CVisHoughCircle
 {
 public:
-	CVisHoughTransform();
-	~CVisHoughTransform();
+	CVisHoughCircle();
+	~CVisHoughCircle();
 	
 	///////////////		old		////////////////////////////////////////////	
 	int detectCircle(IMG_UBBUF srcRoi, vector<houghCircle3f> &bestCircles);
 	///////////////////////////////////////////////////////////////////////
 
+	/**********************************************/
+	// newDetectCircle, 功能说明：外部调用，输入图像，检测圆。
+	// Input:
+	//     IMG_UBBUF ubbSrc,输入图像
+
+	// Output:
+	//		使用getBestCircles()获取最终圆。
+	//
+	// Return:
+	//     0 - 正常
+	//     -1 - 输入图像或参数异常
+	//		-2 - 金字塔错误
+	//		-3 - 边缘检测错误
+	//		-4 - 寻找局部圆心最大值时滤波出错
+	// Author: Jimmy Zhan 2017/4/20
+	/**********************************************/
 	int newDetectCircle(IMG_UBBUF ubbSrc);
+
+	/**********************************************/
+	// getBestCircles, 功能说明：外部调用，在调用newDetectCircle()后，获取最佳圆
+
+	// Return:
+	//     vector<houghCircle3i> - 最佳圆信息
+
+	// Author: Jimmy Zhan 2017/4/20
+	/**********************************************/
 	vector<houghCircle3i> getBestCircles();
 
 	void setParams(int downLevel,
@@ -128,8 +153,8 @@ private:
 	int m_localThreshMin;		//投票最小阈值
 
 	//7
-	int m_radiusMin;
-	int m_radiusMax;
+	int m_radiusMin;		//半径最小值
+	int m_radiusMax;		//半径最大值
 
 	//9
 	int m_voteScoreMin;		//最终综合得分阈值(和金字塔层数有关，图像小梯度点少得分少)

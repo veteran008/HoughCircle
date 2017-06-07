@@ -1,4 +1,4 @@
-#include "stdafx.h"
+ï»¿#include "stdafx.h"
 #include "myHoughTransform.h"
 
 
@@ -13,12 +13,12 @@ int my_vsprintf(char *format, ...)
 	//vsprintf(buf, format, st);
 	vsnprintf(buf, printBufSize, format, st);
 	/***************************************************************************/
-	/*       º¯ÊıÃû: vsprintf                                       ¡¡¡¡¡¡¡¡¡¡¡¡
-	/*       ¹¦ ÄÜ: ËÍ¸ñÊ½»¯Êä³öµ½´®ÖĞ                                         ¡¡¡¡
-	/*       ·µ»ØÖµ: Õı³£Çé¿öÏÂ·µ»ØÉú³É×Ö´®µÄ³¤¶È(³ıÈ¥\0),´íÎóÇé¿ö·µ»Ø¸ºÖµ
-	/*       ÓÃ ·¨: int vsprintf(char *string, char *format, va_list param);
-	/*                ½«param °´¸ñÊ½formatĞ´Èë×Ö·û´®stringÖĞ
-	/*       ×¢: ¸Ãº¯Êı»á³öÏÖÄÚ´æÒç³öÇé¿ö,½¨ÒéÊ¹ÓÃvsnprintf                ¡¡¡¡ ¡¡  ¡¡                                                     */
+	/*       å‡½æ•°å: vsprintf                                       ã€€ã€€ã€€ã€€ã€€ã€€
+	/*       åŠŸ èƒ½: é€æ ¼å¼åŒ–è¾“å‡ºåˆ°ä¸²ä¸­                                         ã€€ã€€
+	/*       è¿”å›å€¼: æ­£å¸¸æƒ…å†µä¸‹è¿”å›ç”Ÿæˆå­—ä¸²çš„é•¿åº¦(é™¤å»\0),é”™è¯¯æƒ…å†µè¿”å›è´Ÿå€¼
+	/*       ç”¨ æ³•: int vsprintf(char *string, char *format, va_list param);
+	/*                å°†param æŒ‰æ ¼å¼formatå†™å…¥å­—ç¬¦ä¸²stringä¸­
+	/*       æ³¨: è¯¥å‡½æ•°ä¼šå‡ºç°å†…å­˜æº¢å‡ºæƒ…å†µ,å»ºè®®ä½¿ç”¨vsnprintf                ã€€ã€€ ã€€  ã€€                                                     */
 	/***************************************************************************/
 	va_end(st);
 	cout << buf;// << endl;
@@ -32,24 +32,24 @@ bool points_comp(const edgeInformation &a, const edgeInformation &b)
 	return a.gradient > b.gradient;
 }
 
-//2¡¢±ßÔµ¼ì²â
+//2ã€è¾¹ç¼˜æ£€æµ‹
 
 ///////////////////////////////////////////////////////////////////////////
-//VisEdge_detection¹¦ÄÜËµÃ÷
+//VisEdge_detectionåŠŸèƒ½è¯´æ˜
 //Input
-//srcRoi   ÊäÈëÍ¼Ïñ
-//roiSize  ÊäÈëÍ¼ÏñµÄ³ß´ç
-//threshold  Ìİ¶ÈÇ¿¶ÈµÄãĞÖµ£¨ÀíÂÛÉÏÊÇ´óÓÚ0Ğ¡ÓÚ1250µÄÕûÊı£©¡£Èç¹ûÓÃ»§²»ÖªµÀãĞÖµÉèÎª¶àÉÙºÏÊÊ£¬¿ÉÒÔÊäÈë0£¨Ëã·¨×Ô¶¯»ñÈ¡ºÏÊÊµÄãĞÖµ£©¡£
+//srcRoi   è¾“å…¥å›¾åƒ
+//roiSize  è¾“å…¥å›¾åƒçš„å°ºå¯¸
+//threshold  æ¢¯åº¦å¼ºåº¦çš„é˜ˆå€¼ï¼ˆç†è®ºä¸Šæ˜¯å¤§äº0å°äº1250çš„æ•´æ•°ï¼‰ã€‚å¦‚æœç”¨æˆ·ä¸çŸ¥é“é˜ˆå€¼è®¾ä¸ºå¤šå°‘åˆé€‚ï¼Œå¯ä»¥è¾“å…¥0ï¼ˆç®—æ³•è‡ªåŠ¨è·å–åˆé€‚çš„é˜ˆå€¼ï¼‰ã€‚
 //
 //output
-//dstRoi  Ìİ¶ÈÇ¿¶È
-//edgeInformation *&edgeArray  ±ßÔµµãĞÅÏ¢£¬°üÀ¨ÏñËØ×ø±ê¡¢ÑÇÏñËØ×ø±ê¡¢Ìİ¶ÈÇ¿¶È¡¢½Ç¶È
+//dstRoi  æ¢¯åº¦å¼ºåº¦
+//edgeInformation *&edgeArray  è¾¹ç¼˜ç‚¹ä¿¡æ¯ï¼ŒåŒ…æ‹¬åƒç´ åæ ‡ã€äºšåƒç´ åæ ‡ã€æ¢¯åº¦å¼ºåº¦ã€è§’åº¦
 //
-//º¯Êı·µ»Ø
-//Õı³£Çé¿öÏÂ·µ»Ø1£»
-//Èç¹ûÓÃ»§ÊäÈëãĞÖµĞ¡ÓÚ0£¬º¯Êı·µ»Ø-1£»
-//Èç¹ûÊäÈë²ÎÊı²»ÕıÈ·£¬°üÀ¨Í¼Ïñ³ß´ç²»ÕıÈ·¡¢srcRoi´óĞ¡Óë³ß´ç²»·ûºÏ£¬º¯Êı·µ»Ø-1¡£
-//Author£º½ªºØ/20170227
+//å‡½æ•°è¿”å›
+//æ­£å¸¸æƒ…å†µä¸‹è¿”å›1ï¼›
+//å¦‚æœç”¨æˆ·è¾“å…¥é˜ˆå€¼å°äº0ï¼Œå‡½æ•°è¿”å›-1ï¼›
+//å¦‚æœè¾“å…¥å‚æ•°ä¸æ­£ç¡®ï¼ŒåŒ…æ‹¬å›¾åƒå°ºå¯¸ä¸æ­£ç¡®ã€srcRoiå¤§å°ä¸å°ºå¯¸ä¸ç¬¦åˆï¼Œå‡½æ•°è¿”å›-1ã€‚
+//Authorï¼šå§œè´º/20170227
 ////////////////////////////////////////////////
 
 ////////////////////////	namespace ommTool	/////////////////////////
@@ -83,7 +83,7 @@ namespace ommTool
 		free(pBuffer);
 	}
 
-	//¸ø¶¨Ò»¸öÖµthreshold£¬¼ÆËã×î´óÀà¼ä·½²î
+	//ç»™å®šä¸€ä¸ªå€¼thresholdï¼Œè®¡ç®—æœ€å¤§ç±»é—´æ–¹å·®
 	IMG_REAL getIntraClassVariance(Ipp16s* src, int srcRows, int srcCols, int &varTh)//int &varian)
 	{
 		//intra-class variance
@@ -144,7 +144,7 @@ namespace ommTool
 
 	IMG_INT VisEdge_detection(IMG_UBYTE *srcRoi, IMG_SIZE roiSize, int threshold, IMG_WORD *dstRoi, IMG_UBYTE *dstRoiE, Ipp32f *angAll,edgeInformation *&edgeArray, IMG_INT &eNum)
 	{
-		//Èç¹ûãĞÖµĞ¡ÓÚ0£¬º¯ÊıÖ±½Ó·µ»Ø-1
+		//å¦‚æœé˜ˆå€¼å°äº0ï¼Œå‡½æ•°ç›´æ¥è¿”å›-1
 		if (threshold < 0)
 		{
 			return -1;
@@ -153,19 +153,19 @@ namespace ommTool
 		int roiRows = roiSize.height;
 		int roiCols = roiSize.width;
 
-		//½Ç¶ÈĞÅÏ¢
+		//è§’åº¦ä¿¡æ¯
 //		Ipp32f *angAll;
 		//angAll = (Ipp32f*)malloc(roiRows*roiCols * sizeof(Ipp32f));
 
 		std::vector<edgeInformation> edgeInfor;
 		edgeInformation edInf;
 
-		int k = 0;//¼ÇÂ¼±ßÔµµãµÄ¸öÊı
-		Ipp16u k1;//Å×ÎïÏßÄâºÏµÄÈı¸öÒÑÖªµã
+		int k = 0;//è®°å½•è¾¹ç¼˜ç‚¹çš„ä¸ªæ•°
+		Ipp16u k1;//æŠ›ç‰©çº¿æ‹Ÿåˆçš„ä¸‰ä¸ªå·²çŸ¥ç‚¹
 		Ipp16u k2;
 		Ipp16u k3;
-		float deci;//Å×ÎïÏßÄâºÏ¶¥µãµÄĞ¡Êı²¿·Ö£¬¼´¶ÔÓ¦µÄÑÇÏñËØ
-		float sumx = 0;//±ßÔµµãµÄx×ø±êÖ®ºÍ
+		float deci;//æŠ›ç‰©çº¿æ‹Ÿåˆé¡¶ç‚¹çš„å°æ•°éƒ¨åˆ†ï¼Œå³å¯¹åº”çš„äºšåƒç´ 
+		float sumx = 0;//è¾¹ç¼˜ç‚¹çš„xåæ ‡ä¹‹å’Œ
 		float sumy = 0;
 		int numberChannels = 1; //the source image is single channel
 
@@ -174,7 +174,7 @@ namespace ommTool
 		SobelFilter_8u16s_C1_5x5(srcRoi, dstRoiSize, dstRoi, angAll);
 
 
-		//°Ñ½Ç¶ÈÓÉ[-PI£¬PI]±äÎª[0£¬360]
+		//æŠŠè§’åº¦ç”±[-PIï¼ŒPI]å˜ä¸º[0ï¼Œ360]
 		/*for (int i = 0; i < roiRows; i++)
 		{
 		for (int j = 0; j < roiCols; j++)
@@ -201,11 +201,11 @@ namespace ommTool
 		fclose(sx);
 		fclose(ang);
 		*/
-		//×Ô¶¯»ñÈ¡Ìİ¶ÈÇ¿¶ÈµÄãĞÖµ
-		//Ê²Ã´Çé¿öÏÂËãÊÇÃ»ÓĞÊäÈëãĞÖµÄØ£¿
+		//è‡ªåŠ¨è·å–æ¢¯åº¦å¼ºåº¦çš„é˜ˆå€¼
+		//ä»€ä¹ˆæƒ…å†µä¸‹ç®—æ˜¯æ²¡æœ‰è¾“å…¥é˜ˆå€¼å‘¢ï¼Ÿ
 		if (threshold == 0)
 		{
-			//Otsu·¨£¬±éÀúËùÓĞµÄ»Ò¶ÈÖµ£¬´Ó1µ½255£¬Ê¹intra-class invariance×î´óµÄÄÇ¸öÖµ£¬¼´ÎªÒªÇóµÄãĞÖµ
+			//Otsuæ³•ï¼Œéå†æ‰€æœ‰çš„ç°åº¦å€¼ï¼Œä»1åˆ°255ï¼Œä½¿intra-class invarianceæœ€å¤§çš„é‚£ä¸ªå€¼ï¼Œå³ä¸ºè¦æ±‚çš„é˜ˆå€¼
 			int varian = 0;
 			int temp = 0;
 			for (int p = 1; p < 800; p++)
@@ -220,7 +220,7 @@ namespace ommTool
 		}
 		//printf("%d\n",threshold);
 
-		//µ½ÑÇÏñËØ
+		//åˆ°äºšåƒç´ 
 		for (int i = 1; i<roiRows - 1; i++)
 		{
 			for (int j = 1; j<roiCols - 1; j++)
@@ -410,8 +410,8 @@ namespace ommTool
 
 
 		eNum = k;
-		//¶şÖµÍ¼
-		for (int t = 0; t < roiCols*roiRows; t++)//¶şÖµÍ¼Ïñ£¬ËùÓĞÏñËØÏÈ¶¼¸³ÖµÎª0£¬±ßÔµµã¸³Öµ255
+		//äºŒå€¼å›¾
+		for (int t = 0; t < roiCols*roiRows; t++)//äºŒå€¼å›¾åƒï¼Œæ‰€æœ‰åƒç´ å…ˆéƒ½èµ‹å€¼ä¸º0ï¼Œè¾¹ç¼˜ç‚¹èµ‹å€¼255
 		{
 			dstRoiE[t] = 0;
 		}
@@ -432,7 +432,7 @@ namespace ommTool
 		}
 		fclose(Binary);
 		*/
-		//ÒÔÊı×éµÄ·½Ê½´«³ö±ßÔµĞÅÏ¢
+		//ä»¥æ•°ç»„çš„æ–¹å¼ä¼ å‡ºè¾¹ç¼˜ä¿¡æ¯
 		edgeArray = (edgeInformation*)malloc(k * sizeof(edgeInformation));
 		for (int i = 0; i < k; i++)
 		{
@@ -456,31 +456,31 @@ namespace ommTool
 
 
 
-CVisHoughTransform::CVisHoughTransform()
+CVisHoughCircle::CVisHoughCircle()
 {
-	m_downLevel = 2;
+	m_downLevel = 2;	//é‡‘å­—å¡”å±‚æ•°ï¼ˆ2ä»£è¡¨0ï¼Œ1ï¼Œ2å…±ä¸‰å±‚ï¼‰	
 	
-	m_sectors = 36;	//10 du
-	m_selectedRatio = (float)0.3;
-	m_nSelectMin = 200 / pow(2, m_downLevel);		//ÆäÊµÓ¦¸Ã¸ú×ÜµÄ±ßÔµµã¸öÊıÏà¹Ø
-	m_nSelectMax = 400 / pow(2, m_downLevel);
+	m_sectors = 36;		//æ‰‡åŒºæ•°
+	m_selectedRatio = (float)0.3;	//æ¯ä¸ªæ‰‡åŒºä¿ç•™çš„æ¢¯åº¦ç‚¹çš„æ¯”ä¾‹
+	m_nSelectMin = 200 / pow(2, m_downLevel);		//ä¿ç•™æ¢¯åº¦ç‚¹çš„æœ€å°å€¼ï¼ˆå…¶å®åº”è¯¥è·Ÿæ€»çš„è¾¹ç¼˜ç‚¹ä¸ªæ•°ç›¸å…³ï¼‰
+	m_nSelectMax = 400 / pow(2, m_downLevel);		//ä¿ç•™æ¢¯åº¦ç‚¹çš„æœ€å¤§å€¼ï¼ˆå…¶å®åº”è¯¥è·Ÿæ€»çš„è¾¹ç¼˜ç‚¹ä¸ªæ•°ç›¸å…³ï¼‰
 
-	m_Ttheta = 5;
-	m_Tshift = 10;
+	m_Ttheta = 5;		//ç‚¹å¯¹çš„æ¢¯åº¦æ–¹å‘å·®åœ¨TthetaèŒƒå›´å†…åˆ™åŒ¹é…
+	m_Tshift = 10;		//ç‚¹å¯¹çš„åç§»åœ¨TshiftèŒƒå›´å†…åˆ™åŒ¹é…
 
-	m_localThreshMin = 20;	//Á¬Í¨Óò±ê¼ÇãĞÖµ£¬Ì«Ğ¡-Á¬Í¨ÓòÌ«¶à£¬Ì«´ó-±¾À´Ò»¸öÁ¬Í¨Óò±»·Ö¸îÁË¡£
+	m_localThreshMin = 20;	//åœ¨ç´¯åŠ å™¨å¯»æ‰¾åœ†å¿ƒæ—¶çš„é˜ˆå€¼(è¿é€šåŸŸæ ‡è®°é˜ˆå€¼ï¼Œå¤ªå°-è¿é€šåŸŸå¤ªå¤šï¼Œå¤ªå¤§-æœ¬æ¥ä¸€ä¸ªè¿é€šåŸŸè¢«åˆ†å‰²äº†ã€‚)
 
-	m_radiusMax = 120 / pow(2,m_downLevel);
-	m_radiusMin = 40 / pow(2, m_downLevel);
+	m_radiusMax = 120 / pow(2,m_downLevel);		//åŠå¾„æœ€å°å€¼
+	m_radiusMin = 40 / pow(2, m_downLevel);		//åŠå¾„æœ€å¤§å€¼
 
-	m_voteScoreMin = m_nSelectMin;
+	m_voteScoreMin = m_nSelectMin;	//åœ¨åŠå¾„ç´¯åŠ å™¨å¯»æ‰¾æœ€ä½³åœ†çš„é˜ˆå€¼
 }
 
-CVisHoughTransform::~CVisHoughTransform()
+CVisHoughCircle::~CVisHoughCircle()
 {
 }
 
-int CVisHoughTransform::detectCircle(IMG_UBBUF srcBuf, vector<houghCircle3f> &bestCircles)
+int CVisHoughCircle::detectCircle(IMG_UBBUF srcBuf, vector<houghCircle3f> &bestCircles)
 {
 	int status = 0;
 	VisBuf setVisbuf;
@@ -522,7 +522,7 @@ int CVisHoughTransform::detectCircle(IMG_UBBUF srcBuf, vector<houghCircle3f> &be
 	return 0;
 }
 
-void CVisHoughTransform::regionDFS(IMG_UWORD *pic, IMG_UWORD *label,int r, int c, int height,int width,int id, IMG_COORD * storeMax,int threshold)
+void CVisHoughCircle::regionDFS(IMG_UWORD *pic, IMG_UWORD *label,int r, int c, int height,int width,int id, IMG_COORD * storeMax,int threshold)
 {
 	if (r < 0 || r >= height || c < 0 || c >= width)		return;
 	if (pic[r * width + c] <= threshold || label[r * width + c] != 0)	return;
@@ -547,21 +547,21 @@ void CVisHoughTransform::regionDFS(IMG_UWORD *pic, IMG_UWORD *label,int r, int c
 }
 
 //////////////////////////////////////////////////
-//houghCircle¹¦ÄÜËµÃ÷£º»ô·òÔ²¼ì²â
+//houghCircleåŠŸèƒ½è¯´æ˜ï¼šéœå¤«åœ†æ£€æµ‹
 //Input
-//	edgeInformation *edgeArray  ±ßÔµµãĞÅÏ¢
-//	IMG_INT eNum  ±ßÔµµã¸öÊı
-//  IMG_RBUF angle_rBuf Ìİ¶È·½ÏòÍ¼
-//  int voteScore Í¶Æ±ãĞÖµ
-//  int minRadius ×îĞ¡°ë¾¶
-//  int maxRadius ×î´ó°ë¾¶ 
-//  int center_Dis Ô²ĞÄ¾àÀë
+//	edgeInformation *edgeArray  è¾¹ç¼˜ç‚¹ä¿¡æ¯
+//	IMG_INT eNum  è¾¹ç¼˜ç‚¹ä¸ªæ•°
+//  IMG_RBUF angle_rBuf æ¢¯åº¦æ–¹å‘å›¾
+//  int voteScore æŠ•ç¥¨é˜ˆå€¼
+//  int minRadius æœ€å°åŠå¾„
+//  int maxRadius æœ€å¤§åŠå¾„ 
+//  int center_Dis åœ†å¿ƒè·ç¦»
 
 //Output
-//	vector<houghCircle3f> &bestCircles  Êä³öËùÓĞ×î¼ÑÔ²
+//	vector<houghCircle3f> &bestCircles  è¾“å‡ºæ‰€æœ‰æœ€ä½³åœ†
 
 //////////////////////////////////////////////////
-int CVisHoughTransform::houghCircle(edgeInformation *edgeArray, IMG_INT eNum, /*IMG_WBUF mag_wBuf,*/IMG_RBUF angle_rBuf, int voteScore, int minRadius, int maxRadius, int center_Dis, vector<houghCircle3f> &bestCircles)
+int CVisHoughCircle::houghCircle(edgeInformation *edgeArray, IMG_INT eNum, /*IMG_WBUF mag_wBuf,*/IMG_RBUF angle_rBuf, int voteScore, int minRadius, int maxRadius, int center_Dis, vector<houghCircle3f> &bestCircles)
 {
 	VisBuf setVisbuf;
 
@@ -665,9 +665,9 @@ int CVisHoughTransform::houghCircle(edgeInformation *edgeArray, IMG_INT eNum, /*
 						int xCoord = (int)bestCircles[i].centerX;
 						int yCoord = (int)bestCircles[i].centerY;
 						int radius = (int)bestCircles[i].radius;
-						if (abs(xCoord - x0) < center_Dis && abs(yCoord - y0) < center_Dis)		//Ô²ĞÄ¾àÔÚÒ»¶¨·¶Î§£¨Í¬Ô²£©
+						if (abs(xCoord - x0) < center_Dis && abs(yCoord - y0) < center_Dis)		//åœ†å¿ƒè·åœ¨ä¸€å®šèŒƒå›´ï¼ˆåŒåœ†ï¼‰
 						{
-							if (H[y0][x0][r] > H[yCoord][xCoord][radius])	//Æ±Êı¸ß£¬Ìæ»»
+							if (H[y0][x0][r] > H[yCoord][xCoord][radius])	//ç¥¨æ•°é«˜ï¼Œæ›¿æ¢
 							{
 								bestCircles.erase(bestCircles.begin() + i);
 								bestCircles.insert(bestCircles.begin(), circle);
@@ -709,7 +709,7 @@ int CVisHoughTransform::houghCircle(edgeInformation *edgeArray, IMG_INT eNum, /*
 	return 0;
 }
 
-int CVisHoughTransform::inc_if_inside(int *** H, int x, int y, int height, int width, int r)
+int CVisHoughCircle::inc_if_inside(int *** H, int x, int y, int height, int width, int r)
 {
 	if (x >= 0 && x < width && y >= 0 && y < height)
 	{
@@ -719,7 +719,7 @@ int CVisHoughTransform::inc_if_inside(int *** H, int x, int y, int height, int w
 	return 0;
 }
 
-IppStatus CVisHoughTransform::pyramid(IMG_UBBUF src, unsigned char * pDst, int & pyramid_width, int & pyramid_height, int level)
+IppStatus CVisHoughCircle::pyramid(IMG_UBBUF src, unsigned char * pDst, int & pyramid_width, int & pyramid_height, int level)
 {
 	IppStatus   status = ippStsNoErr;
 	//ofstream outfile("pyramidData.txt");
@@ -852,9 +852,9 @@ exit:
 	return status;
 }
 
-void CVisHoughTransform::getGaussianKernel_dim2(IMG_LREAL **gaus, const int size, const double sigma)
+void CVisHoughCircle::getGaussianKernel_dim2(IMG_LREAL **gaus, const int size, const double sigma)
 {
-	const double PIII = 4.0*atan(1.0); //Ô²ÖÜÂÊ¦Ğ¸³Öµ  
+	const double PIII = 4.0*atan(1.0); //åœ†å‘¨ç‡Ï€èµ‹å€¼  
 	IMG_INT center = size / 2;
 	IMG_LREAL sum = 0;
 	for (IMG_INT i = 0; i < size; i++)
@@ -875,7 +875,7 @@ void CVisHoughTransform::getGaussianKernel_dim2(IMG_LREAL **gaus, const int size
 
 }
 
-int CVisHoughTransform::gaussfilter(IMG_UBBUF src, IMG_UBYTE *pDst,int kernalSize,double sigma)
+int CVisHoughCircle::gaussfilter(IMG_UBBUF src, IMG_UBYTE *pDst,int kernalSize,double sigma)
 {
 	int status = ippStsNoErr;
 	//init var
@@ -925,7 +925,7 @@ int CVisHoughTransform::gaussfilter(IMG_UBBUF src, IMG_UBYTE *pDst,int kernalSiz
 		printf("%d,", kernel[i*size + j]);
 		}
 		}*/
-		IMG_INT divisor = 32767;//¹éÒ»»¯
+		IMG_INT divisor = 32767;//å½’ä¸€åŒ–
 		IMG_UBYTE *pBuffer = NULL;                /* Pointer to the work buffer */
 		IppiFilterBorderSpec* pSpec = NULL;   /* context structure */
 		IMG_INT iTmpBufSize = 0, iSpecSize = 0;   /* Common work buffer size */
@@ -966,7 +966,7 @@ exit:
 	return status;
 }
 
-int CVisHoughTransform::gaussfilter_UWORD(IMG_UWBUF src, IMG_UWORD *pDst, int kernalSize, double sigma)
+int CVisHoughCircle::gaussfilter_UWORD(IMG_UWBUF src, IMG_UWORD *pDst, int kernalSize, double sigma)
 {
 	int status = ippStsNoErr;
 	//init var
@@ -1016,7 +1016,7 @@ int CVisHoughTransform::gaussfilter_UWORD(IMG_UWBUF src, IMG_UWORD *pDst, int ke
 		printf("%d,", kernel[i*size + j]);
 		}
 		}*/
-		IMG_INT divisor = 32767;//¹éÒ»»¯
+		IMG_INT divisor = 32767;//å½’ä¸€åŒ–
 		IMG_UBYTE *pBuffer = NULL;                /* Pointer to the work buffer */
 		IppiFilterBorderSpec* pSpec = NULL;   /* context structure */
 		IMG_INT iTmpBufSize = 0, iSpecSize = 0;   /* Common work buffer size */
@@ -1057,7 +1057,7 @@ exit:
 	return status;
 }
 
-int CVisHoughTransform::findLocalmaximum(IMG_UWBUF uwbSrc)
+int CVisHoughCircle::findLocalmaximum(IMG_UWBUF uwbSrc)
 {
 	int status = ippStsNoErr;
 	VisBuf setVisbuf;
@@ -1067,7 +1067,11 @@ int CVisHoughTransform::findLocalmaximum(IMG_UWBUF uwbSrc)
 	IMG_UWORD *pFilter = new IMG_UWORD[width * height];
 
 	//do gaussianFilter to find accuracy center region
-	gaussfilter_UWORD(uwbSrc, pFilter, 3, 3);
+	status = gaussfilter_UWORD(uwbSrc, pFilter, 3, 3);
+	if (status != 0)
+	{
+		return -1;
+	}
 	IMG_UWBUF uwbFilter;
 	setVisbuf.set_IMG_UWBUF(uwbFilter, pFilter, uwbSrc.size, uwbSrc.linestep);
 	
@@ -1149,20 +1153,44 @@ exit:
 	return status;
 }
 
-int CVisHoughTransform::newDetectCircle(IMG_UBBUF ubbSrc)
+/**********************************************/
+// newDetectCircle, åŠŸèƒ½è¯´æ˜ï¼šå¤–éƒ¨è°ƒç”¨ï¼Œè¾“å…¥å›¾åƒï¼Œæ£€æµ‹åœ†ã€‚
+// Input:
+//     IMG_UBBUF ubbSrc,è¾“å…¥å›¾åƒ
+  
+// Output:
+//		ä½¿ç”¨getBestCircles()è·å–æœ€ç»ˆåœ†ã€‚
+//
+// Return:
+//     0 - æ­£å¸¸
+//     -1 - è¾“å…¥å›¾åƒæˆ–å‚æ•°å¼‚å¸¸
+//		-2 - é‡‘å­—å¡”é”™è¯¯
+//		-3 - è¾¹ç¼˜æ£€æµ‹é”™è¯¯
+//		-4 - å¯»æ‰¾å±€éƒ¨åœ†å¿ƒæœ€å¤§å€¼æ—¶æ»¤æ³¢å‡ºé”™
+// Author: Jimmy Zhan 2017/4/20
+/**********************************************/
+int CVisHoughCircle::newDetectCircle(IMG_UBBUF ubbSrc)
 {
 	int status = 0;
+	if (ubbSrc.ptr == NULL || m_downLevel < 0 || m_sectors <= 0 || m_selectedRatio <= 0 || m_nSelectMin <= 0 || m_nSelectMax <= 0 || m_Ttheta <= 0 || m_Tshift <= 0 || m_localThreshMin <= 0 || m_radiusMin <= 0 || m_radiusMax <= 0 || m_voteScoreMin <= 0)
+	{
+		return -1;
+	}
+	
 	VisBuf setVisbuf;
 	int srcHeight = ubbSrc.size.height;
 	int srcWidth = ubbSrc.size.width;
+	IMG_UBYTE *pPyramidData = new IMG_UBYTE[srcHeight * srcWidth];
 
 	//////////////////	pyramid layerDown (8ms)	///////////////
 	int downWidth = 0;
 	int downHeight = 0;
-	IMG_UBYTE *pPyramidData = new IMG_UBYTE[srcHeight * srcWidth];
+
 	if (m_downLevel)
 	{
 		status = (int)pyramid(ubbSrc, pPyramidData, downWidth, downHeight, m_downLevel);
+		if (status != 0)
+			return -2;
 	}
 	else
 	{
@@ -1174,6 +1202,7 @@ int CVisHoughTransform::newDetectCircle(IMG_UBBUF ubbSrc)
 	IMG_UBBUF ubbPyramid;
 	setVisbuf.set_IMG_UBBUF(ubbPyramid, pPyramidData, { (IMG_UWORD)downWidth,(IMG_UWORD)downHeight }, downWidth);
 
+
 	///////////////	sobel 5*5 (40+ ms)	///////////////////////
 	int threshold = 0;
 	IMG_WORD *dstRoi = new IMG_WORD[downWidth * downHeight];
@@ -1182,11 +1211,16 @@ int CVisHoughTransform::newDetectCircle(IMG_UBBUF ubbSrc)
 	edgeInformation *edgeArray = NULL;
 	IMG_INT eNum = 0;
 	status = ommTool::VisEdge_detection(ubbPyramid.ptr, ubbPyramid.size, threshold, dstRoi, dstRoiE, angAll, edgeArray, eNum);		
+	if (status == -1)
+	{
+		return -3;
+	}
 	//show edgeDetect result
 	IMG_WBUF wbGradMag;
 	setVisbuf.set_IMG_WBUF(wbGradMag, dstRoi, ubbPyramid.size, ubbPyramid.linestep * sizeof(IMG_WORD));
 	IMG_RBUF rbGradAngle;
 	setVisbuf.set_IMG_RBUF(rbGradAngle, angAll, ubbPyramid.size, ubbPyramid.linestep * sizeof(IMG_REAL));
+
 
 	///////////////////		seperate gradAngle	(ms)	//////////////////
 	float range = (float)360.0 / m_sectors;
@@ -1232,6 +1266,8 @@ int CVisHoughTransform::newDetectCircle(IMG_UBBUF ubbSrc)
 //#endif // DEBUG
 //
 //	
+
+
 	//////////////////		find opposite points pair and accumulate center (50 ms) ///////////////////////////////
 	IMG_UWBUF hAcc2_wBuf;
 	IMG_UWORD *pHacc2 = new IMG_UWORD[downHeight * downWidth];
@@ -1269,8 +1305,14 @@ int CVisHoughTransform::newDetectCircle(IMG_UBBUF ubbSrc)
 	//show pHacc2
 	setVisbuf.set_IMG_UWBUF(hAcc2_wBuf, pHacc2, ubbPyramid.size, downWidth * sizeof(IMG_UWORD));
 	
+
+
 	///////////////////////////		find local max		//////////////////////////////////
-	findLocalmaximum(hAcc2_wBuf);
+	status = findLocalmaximum(hAcc2_wBuf);
+	if (status == -1)
+	{
+		return -4;
+	}
 
 	//////////////////////////		accumulate r		//////////////////////////////////
 	IMG_UWORD **pHacc3 = new IMG_UWORD*[downHeight * downWidth];
@@ -1331,27 +1373,35 @@ int CVisHoughTransform::newDetectCircle(IMG_UBBUF ubbSrc)
 	//free
 	for (int i = 0; i <= downHeight * downWidth - 1; i++)
 	{
-		//cout << i << endl;
- 		delete[] pHacc3[i];
+		if(pHacc3[i] != NULL)
+ 			delete[] pHacc3[i];
 	}
 
-	delete[] pHacc3;
-	delete[] pHacc3_show;
-	delete[] pHacc2;
-	delete[] pPyramidData;
-	delete[] dstRoi;
-	delete[] dstRoiE;
-	delete[] angAll;
+	if (pHacc3 != NULL)	delete[] pHacc3;
+	if (pHacc3_show != NULL) delete[] pHacc3_show;
+	if (pHacc2 != NULL)	delete[] pHacc2;
+	if (pPyramidData != NULL)	delete[] pPyramidData;
+	if (dstRoi != NULL)	delete[] dstRoi;
+	if (dstRoiE != NULL)	delete[] dstRoiE;
+	if (angAll != NULL)	delete[] angAll;
+
 	if (edgeArray != NULL)
 	{
 		free(edgeArray);
 	}
 
-
 	return 0;
 }
 
-vector<houghCircle3i> CVisHoughTransform::getBestCircles() 
+/**********************************************/
+// getBestCircles, åŠŸèƒ½è¯´æ˜ï¼šå¤–éƒ¨è°ƒç”¨ï¼Œåœ¨è°ƒç”¨newDetectCircle()åï¼Œè·å–æœ€ä½³åœ†
+
+// Return:
+//     vector<houghCircle3i> - æœ€ä½³åœ†ä¿¡æ¯
+
+// Author: Jimmy Zhan 2017/4/20
+/**********************************************/
+vector<houghCircle3i> CVisHoughCircle::getBestCircles() 
 { 
 	for (int i = 0; i < bestCircles.size(); i++)
 	{
@@ -1362,7 +1412,9 @@ vector<houghCircle3i> CVisHoughTransform::getBestCircles()
 	return bestCircles; 
 }
 
-void CVisHoughTransform::setParams(int downLevel, 
+
+//è®¾ç½®æ£€æµ‹åœ†å‚æ•°
+void CVisHoughCircle::setParams(int downLevel, 
 								int sectors, 
 								float selectedRatio, 
 								int selectMin, 

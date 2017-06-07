@@ -35,5 +35,11 @@ int VisBuf::set_IMG_RBUF(IMG_RBUF & srcBuf, IMG_REAL * ptr, IMG_SIZE size, IMG_U
 	return 0;
 }
 
-
+int VisBuf::set_IMG_UWBUF(IMG_UWBUF & srcBuf, IMG_UWORD * ptr, IMG_SIZE size, IMG_UWORD linestep)
+{
+	srcBuf.ptr = ptr;
+	srcBuf.size = size;
+	srcBuf.linestep = linestep;
+	return 0;
+}
 
