@@ -134,6 +134,7 @@ private:
 
 	int findLocalmaximum(IMG_UWBUF uwbSrc);
 	void regionDFS(IMG_UWORD *pic, IMG_UWORD *label, int r, int c, int height, int width, int id, IMG_COORD * storeMax, int threshold);
+	int calDistance(IMG_COORD pt1, IMG_COORD pt2);
 
 private:
 	//1
@@ -155,6 +156,7 @@ private:
 	//7
 	int m_radiusMin;		//半径最小值
 	int m_radiusMax;		//半径最大值
+	int m_centerDis;		//最小圆心距
 
 	//9
 	int m_voteScoreMin;		//最终综合得分阈值(和金字塔层数有关，图像小梯度点少得分少)

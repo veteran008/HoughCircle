@@ -269,11 +269,11 @@ int main()
 	//test_detectCircle();
 	for (int i = 1; i <= 418; i++)
 	{
-		//test_newDetectCircle(i);
+		test_newDetectCircle(i);
 	}
 	for (int i = 1; i <= 418; i++)
 	{
-		OpenCV_HoughCircle(i);
+		//OpenCV_HoughCircle(i);
 	}
 	//test_gaussianFilter();
 

@@ -458,7 +458,7 @@ namespace ommTool
 
 CVisHoughCircle::CVisHoughCircle()
 {
-	m_downLevel = 2;	//金字塔层数（2代表0，1，2共三层）	
+	m_downLevel = 3;	//金字塔层数（2代表0，1，2共三层）	//should be 2 or 3
 	
 	m_sectors = 36;		//扇区数
 	m_selectedRatio = (float)0.3;	//每个扇区保留的梯度点的比例
@@ -468,10 +468,11 @@ CVisHoughCircle::CVisHoughCircle()
 	m_Ttheta = 5;		//点对的梯度方向差在Ttheta范围内则匹配
 	m_Tshift = 10;		//点对的偏移在Tshift范围内则匹配
 
-	m_localThreshMin = 20;	//在累加器寻找圆心时的阈值(连通域标记阈值，太小-连通域太多，太大-本来一个连通域被分割了。)
+	m_localThreshMin = 80 / pow(2, m_downLevel);	//20//在累加器寻找圆心时的阈值(连通域标记阈值，太小-连通域太多，太大-本来一个连通域被分割了。)
 
-	m_radiusMax = 120 / pow(2,m_downLevel);		//半径最小值
-	m_radiusMin = 40 / pow(2, m_downLevel);		//半径最大值
+	m_radiusMax = 120 / pow(2,m_downLevel);		//半径最大值
+	m_radiusMin = 40 / pow(2, m_downLevel);		//半径最小值
+	m_centerDis = 2 * m_radiusMin;
 
 	m_voteScoreMin = m_nSelectMin;	//在半径累加器寻找最佳圆的阈值
 }
@@ -544,6 +545,13 @@ void CVisHoughCircle::regionDFS(IMG_UWORD *pic, IMG_UWORD *label,int r, int c, i
 		}
 	}
 
+}
+
+int CVisHoughCircle::calDistance(IMG_COORD pt1, IMG_COORD pt2)
+{
+	int distance = 0;
+	distance = sqrt((pt1.x - pt2.x) * (pt1.x - pt2.x) + (pt1.y - pt2.y) * (pt1.y - pt2.y));
+	return distance;
 }
 
 //////////////////////////////////////////////////
@@ -1172,7 +1180,7 @@ exit:
 int CVisHoughCircle::newDetectCircle(IMG_UBBUF ubbSrc)
 {
 	int status = 0;
-	if (ubbSrc.ptr == NULL || m_downLevel < 0 || m_sectors <= 0 || m_selectedRatio <= 0 || m_nSelectMin <= 0 || m_nSelectMax <= 0 || m_Ttheta <= 0 || m_Tshift <= 0 || m_localThreshMin <= 0 || m_radiusMin <= 0 || m_radiusMax <= 0 || m_voteScoreMin <= 0)
+	if (ubbSrc.ptr == NULL || m_downLevel < 0 || m_sectors <= 0 || m_selectedRatio <= 0 || m_nSelectMin <= 0 || m_nSelectMax <= 0 || m_Ttheta <= 0 || m_Tshift <= 0 || m_localThreshMin <= 0 || m_radiusMin <= 0 || m_radiusMax <= 0 ||  m_voteScoreMin <= 0)
 	{
 		return -1;
 	}
@@ -1197,6 +1205,10 @@ int CVisHoughCircle::newDetectCircle(IMG_UBBUF ubbSrc)
 		memcpy(pPyramidData, ubbSrc.ptr, srcHeight * srcWidth);
 		downHeight = srcHeight;
 		downWidth = srcWidth;
+	}
+	if (m_radiusMin >= downWidth || m_radiusMin >= downHeight || m_radiusMax >= downWidth || m_radiusMax >= downHeight)
+	{
+		return -1;
 	}
 	//show pyramid result
 	IMG_UBBUF ubbPyramid;
@@ -1295,8 +1307,8 @@ int CVisHoughCircle::newDetectCircle(IMG_UBBUF ubbSrc)
 					continue;
 				}
 				//else , calculate center of points pair
-				IMG_WORD centerX = round( (angleTable[i][j].xyDecimal.x + angleTable[opposite_sec][k].xyDecimal.x) / 2);
-				IMG_WORD centerY = round( (angleTable[i][j].xyDecimal.y + angleTable[opposite_sec][k].xyDecimal.y) / 2);
+				IMG_WORD centerX = round( (angleTable[i][j].xyDecimal.x + angleTable[opposite_sec][k].xyDecimal.x) * 0.5);
+				IMG_WORD centerY = round( (angleTable[i][j].xyDecimal.y + angleTable[opposite_sec][k].xyDecimal.y) * 0.5);
 				//accumulate
 				pHacc2[centerY * downWidth + centerX] += 1;
 			}
@@ -1360,9 +1372,30 @@ int CVisHoughCircle::newDetectCircle(IMG_UBBUF ubbSrc)
 			if (pHacc3_show[pos + j] > m_voteScoreMin)
 			{
 				houghCircle3i _cicle;
-				_cicle.center = { (IMG_WORD)j,(IMG_WORD)(pos / downWidth) };
+				_cicle.center = { (IMG_WORD)j,(IMG_WORD)i };
 				_cicle.radius = temp_r;
-				bestCircles.push_back(_cicle);
+				int k = 0;
+				for (k = 0; k < bestCircles.size(); k++)
+				{
+					int xCoord = bestCircles[k].center.x;
+					int yCoord = bestCircles[k].center.y;
+					int radius = bestCircles[k].radius;
+					if (calDistance({ (IMG_WORD)xCoord,(IMG_WORD)yCoord }, { (IMG_WORD)j,(IMG_WORD)i }) < m_centerDis)		//最小圆心距判断
+					{
+						if (pHacc3[i * downWidth + j][temp_r] > pHacc3[yCoord * downWidth + xCoord][radius])
+						{
+							bestCircles.erase(bestCircles.begin() + k);
+							bestCircles.insert(bestCircles.begin(), _cicle);
+						}
+						break;
+					}
+				}
+
+				if (k == bestCircles.size())
+				{
+					bestCircles.insert(bestCircles.begin(), _cicle);
+				}
+
 			}
 		}
 		pos += downWidth;
