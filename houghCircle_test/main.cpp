@@ -77,7 +77,7 @@ int OpenCV_HoughCircle(int pic_num)
 	vector<Vec3f> circles(circleNum_Max);		//init!!!!!!!!!!!!!!!!!
 	////////////////////////////////////////////////////////////////////////////////////////
 	double t = (double)cvGetTickCount();
-	HoughCircles(img_grey, circles, CV_HOUGH_GRADIENT,1, img_grey.rows / 8, 200, 50,40,120);
+	HoughCircles(img_grey, circles, CV_HOUGH_GRADIENT,1, img_grey.rows / 8, 50, 50,40,120);
 	t = (double)cvGetTickCount() - t;
 	printf("OpenCV houghCircle exec time = %g ms\n", t / (cvGetTickFrequency() * 1000));
 	///////////////////////////////////////////////////////////////////////////////////////
@@ -164,7 +164,7 @@ int test_newDetectCircle(int pic_num)
 	printf("\n------kase:%d ------------\n", pic_num);
 	char readBmpPath[100];
 	char saveBmpPath[100];
-	sprintf(readBmpPath, "img/socket downlook срио/t (%u).bmp", pic_num);
+	sprintf(readBmpPath, "img/978/t (%u).bmp", pic_num);
 	sprintf(saveBmpPath, "img/res/res(%u).bmp", pic_num);
 
 	VisBuf setVisBf;
@@ -267,11 +267,11 @@ int main()
 
 	//test1();
 	//test_detectCircle();
-	for (int i = 1; i <= 418; i++)
+	for (int i = 3; i <= 238; i++)
 	{
 		test_newDetectCircle(i);
 	}
-	for (int i = 1; i <= 418; i++)
+	for (int i = 1; i <= 10; i++)
 	{
 		//OpenCV_HoughCircle(i);
 	}

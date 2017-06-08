@@ -1,7 +1,7 @@
 ﻿#include "stdafx.h"
 #include "myHoughTransform.h"
 
-
+//#define USE_FILTER
 const int printBufSize = 256;
 int my_vsprintf(char *format, ...)
 {
@@ -1074,6 +1074,7 @@ int CVisHoughCircle::findLocalmaximum(IMG_UWBUF uwbSrc)
 	int height = uwbSrc.size.height;
 	IMG_UWORD *pFilter = new IMG_UWORD[width * height];
 
+#ifdef USE_FILTER
 	//do gaussianFilter to find accuracy center region
 	status = gaussfilter_UWORD(uwbSrc, pFilter, 3, 3);
 	if (status != 0)
@@ -1082,6 +1083,14 @@ int CVisHoughCircle::findLocalmaximum(IMG_UWBUF uwbSrc)
 	}
 	IMG_UWBUF uwbFilter;
 	setVisbuf.set_IMG_UWBUF(uwbFilter, pFilter, uwbSrc.size, uwbSrc.linestep);
+
+#else
+	memcpy(pFilter, uwbSrc.ptr, width * height * sizeof(IMG_UWORD));
+	IMG_UWBUF uwbFilter;
+	setVisbuf.set_IMG_UWBUF(uwbFilter, pFilter, uwbSrc.size, uwbSrc.linestep);
+
+#endif // USE_FILTER
+	
 	
 
 	//select
@@ -1190,7 +1199,7 @@ int CVisHoughCircle::newDetectCircle(IMG_UBBUF ubbSrc)
 	int srcWidth = ubbSrc.size.width;
 	IMG_UBYTE *pPyramidData = new IMG_UBYTE[srcHeight * srcWidth];
 
-	//////////////////	pyramid layerDown (8ms)	///////////////
+	//////////////////	pyramid layerDown (8ms)(3ms)	///////////////
 	int downWidth = 0;
 	int downHeight = 0;
 
@@ -1214,15 +1223,24 @@ int CVisHoughCircle::newDetectCircle(IMG_UBBUF ubbSrc)
 	IMG_UBBUF ubbPyramid;
 	setVisbuf.set_IMG_UBBUF(ubbPyramid, pPyramidData, { (IMG_UWORD)downWidth,(IMG_UWORD)downHeight }, downWidth);
 
+	//		gaussian filter		//
+	/*IMG_UBYTE *pFilter = new IMG_UBYTE[downWidth * downHeight];
+	status = gaussfilter(ubbPyramid, pFilter, 3, 3);
+	if (status != 0)
+	{
+		return -1;
+	}
+	IMG_UBBUF ubbFilter;
+	setVisbuf.set_IMG_UBBUF(ubbFilter, pFilter, { (IMG_UWORD)downWidth,(IMG_UWORD)downHeight }, downWidth);*/
 
-	///////////////	sobel 5*5 (40+ ms)	///////////////////////
+	///////////////	sobel 5*5 (40+ ms)(12ms)	///////////////////////
 	int threshold = 0;
 	IMG_WORD *dstRoi = new IMG_WORD[downWidth * downHeight];
 	IMG_UBYTE *dstRoiE = new IMG_UBYTE[downWidth * downHeight];
 	Ipp32f *angAll = new Ipp32f[downWidth * downHeight];
 	edgeInformation *edgeArray = NULL;
 	IMG_INT eNum = 0;
-	status = ommTool::VisEdge_detection(ubbPyramid.ptr, ubbPyramid.size, threshold, dstRoi, dstRoiE, angAll, edgeArray, eNum);		
+	status = ommTool::VisEdge_detection(ubbPyramid.ptr, ubbPyramid.size, threshold, dstRoi, dstRoiE, angAll, edgeArray, eNum);
 	if (status == -1)
 	{
 		return -3;
@@ -1234,7 +1252,7 @@ int CVisHoughCircle::newDetectCircle(IMG_UBBUF ubbSrc)
 	setVisbuf.set_IMG_RBUF(rbGradAngle, angAll, ubbPyramid.size, ubbPyramid.linestep * sizeof(IMG_REAL));
 
 
-	///////////////////		seperate gradAngle	(ms)	//////////////////
+	///////////////////		seperate gradAngle	(ms)(1ms)	//////////////////
 	float range = (float)360.0 / m_sectors;
 	float inv_range = (float)1.0 / range;
 	angleTable.clear();
@@ -1280,7 +1298,7 @@ int CVisHoughCircle::newDetectCircle(IMG_UBBUF ubbSrc)
 //	
 
 
-	//////////////////		find opposite points pair and accumulate center (50 ms) ///////////////////////////////
+	//////////////////		find opposite points pair and accumulate center (50 ms) (3ms)///////////////////////////////
 	IMG_UWBUF hAcc2_wBuf;
 	IMG_UWORD *pHacc2 = new IMG_UWORD[downHeight * downWidth];
 	memset(pHacc2, 0, sizeof(IMG_UWORD) * downWidth * downHeight);
@@ -1319,14 +1337,14 @@ int CVisHoughCircle::newDetectCircle(IMG_UBBUF ubbSrc)
 	
 
 
-	///////////////////////////		find local max		//////////////////////////////////
+	///////////////////////////		find local max	(1ms)	//////////////////////////////////
 	status = findLocalmaximum(hAcc2_wBuf);
 	if (status == -1)
 	{
 		return -4;
 	}
 
-	//////////////////////////		accumulate r		//////////////////////////////////
+	//////////////////////////		accumulate r	(1ms)	//////////////////////////////////
 	IMG_UWORD **pHacc3 = new IMG_UWORD*[downHeight * downWidth];
 	for (int i = 0; i <= downHeight * downWidth - 1; i++)
 	{
@@ -1353,6 +1371,7 @@ int CVisHoughCircle::newDetectCircle(IMG_UBBUF ubbSrc)
 	IMG_UWORD *pHacc3_show = new IMG_UWORD[downHeight * downWidth];
 	memset(pHacc3_show, 0, sizeof(IMG_UWORD) * downHeight * downWidth);
 
+	// (1ms)
 	bestCircles.clear();
 	int pos = 0;
 	for (int i = 0; i < downHeight; i++)
@@ -1406,19 +1425,20 @@ int CVisHoughCircle::newDetectCircle(IMG_UBBUF ubbSrc)
 	//free
 	for (int i = 0; i <= downHeight * downWidth - 1; i++)
 	{
-		if(pHacc3[i] != NULL)
+		if(pHacc3[i] != nullptr)
  			delete[] pHacc3[i];
 	}
 
-	if (pHacc3 != NULL)	delete[] pHacc3;
-	if (pHacc3_show != NULL) delete[] pHacc3_show;
-	if (pHacc2 != NULL)	delete[] pHacc2;
-	if (pPyramidData != NULL)	delete[] pPyramidData;
-	if (dstRoi != NULL)	delete[] dstRoi;
-	if (dstRoiE != NULL)	delete[] dstRoiE;
-	if (angAll != NULL)	delete[] angAll;
+	if (pHacc3 != nullptr)	delete[] pHacc3;
+	if (pHacc3_show != nullptr) delete[] pHacc3_show;
+	if (pHacc2 != nullptr)	delete[] pHacc2;
+	if (pPyramidData != nullptr)	delete[] pPyramidData;
+	//if (pFilter != nullptr)	delete[] pFilter;
+	if (dstRoi != nullptr)	delete[] dstRoi;
+	if (dstRoiE != nullptr)	delete[] dstRoiE;
+	if (angAll != nullptr)	delete[] angAll;
 
-	if (edgeArray != NULL)
+	if (edgeArray != nullptr)
 	{
 		free(edgeArray);
 	}
