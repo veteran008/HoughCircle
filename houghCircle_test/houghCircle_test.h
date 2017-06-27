@@ -5,6 +5,10 @@
 #include <opencv2/opencv.hpp>
 #include <math.h>
 
+//#include <highgui.h>
+//#include <opencv2/opencv.hpp>
+//#include <opencv2/core/core.hpp> 
+
 using namespace cv;
 
 void sobel(Mat img, Mat &dx, Mat &dy, Mat &mag, Mat &dist);

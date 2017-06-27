@@ -33,6 +33,12 @@ typedef struct
 	float angle;
 }edgeInformation;//边缘点
 
+typedef struct
+{
+	IMG_RCOORD CirCen;//圆心
+	IMG_REAL Radius;//半径
+}StructCircle;//圆
+
 typedef struct taghoughCircle3f	//圆心半径
 {
 	float centerX;
@@ -126,6 +132,10 @@ private:
 		int &pyramid_width,
 		int &pyramid_height,
 		int level);
+	
+	///////Shen
+	////每一层
+	IppStatus __pyramid(Ipp8u* pSrc, IppiSize roiSize, IppiPyramid*&pPyrStruct, Ipp8u ** &pPyrImage, int level);
 
 	void getGaussianKernel_dim2(IMG_LREAL ** gaus, const int size, const double sigma);
 	int gaussfilter(IMG_UBBUF src, IMG_UBYTE * pDst, int kernalSize, double sigma);

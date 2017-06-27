@@ -1,0 +1,9 @@
+
+------kase:4 ------------
+OpenCV houghCircle exec time = 3.48592 ms
+my houghCircle exec time = 10.5966 ms
+OpenCV houghCircle exec time = 0.263803 ms
+OpenCV houghCircle exec time = 7.48653 ms
+OpenCV houghCircle exec time = 0.659808 ms
+OpenCV houghCircle exec time = 6.19817 ms
+my houghCircle exec time = 33.9999 ms

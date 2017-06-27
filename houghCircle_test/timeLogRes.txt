@@ -1,0 +1,39 @@
+
+------kase:3 ------------
+my houghCircle exec time = 55.282 ms
+
+------kase:4 ------------
+my houghCircle exec time = 75.6098 ms
+
+------kase:5 ------------
+my houghCircle exec time = 119.886 ms
+
+------kase:6 ------------
+my houghCircle exec time = 127.45 ms
+
+------kase:7 ------------
+my houghCircle exec time = 99.2532 ms
+
+------kase:8 ------------
+my houghCircle exec time = 101.577 ms
+
+------kase:9 ------------
+my houghCircle exec time = 89.3832 ms
+
+------kase:10 ------------
+my houghCircle exec time = 55.8956 ms
+
+------kase:11 ------------
+my houghCircle exec time = 54.4365 ms
+
+------kase:12 ------------
+my houghCircle exec time = 54.3298 ms
+
+------kase:13 ------------
+my houghCircle exec time = 141.406 ms
+
+------kase:14 ------------
+my houghCircle exec time = 135.8 ms
+
+------kase:15 ------------
+my houghCircle exec time = 134.852 ms
